@@ -116,8 +116,12 @@ function moveLift(lift, targetFloor, button) {
     const currentFloor = parseInt(lift.getAttribute('data-current-floor'));
     const distance = Math.abs(currentFloor - targetFloor);
     const travelTime = distance * 2; // 2 seconds per floor
-    button.disabled=true;
-
+    
+    if(button){
+        button.disabled = true;
+        button.style.background = '#23b123';
+    }
+    
     lift.setAttribute('data-busy', 'true');
     lift.style.transition = `transform ${travelTime}s linear`;
 
@@ -131,7 +135,12 @@ function moveLift(lift, targetFloor, button) {
         setTimeout(() => {
             lift.classList.remove('open');
             lift.setAttribute('data-busy', 'false');
-            button.disabled=false;
+            
+            if(button){
+                button.style.background = 'revert'
+                button.disabled = false;
+            }
+            
             // Check if there are more floors in the queue
             if (targetFloors.length > 0) {
                 const nextFloor = targetFloors.shift();
