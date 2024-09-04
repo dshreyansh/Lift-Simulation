@@ -1,0 +1,53 @@
+.lift-container {
+    display: flex;
+    justify-content: flex-start;
+    min-width: 0px;
+    height: 0px;
+    bottom: 110px;
+    position: relative;
+}
+
+.lift-div {
+    display: flex;
+    margin-left: 100px;
+    min-width: 65px;
+    height: 100px;
+    background-color: gray;
+    /* transition: transform 8s linear; */
+}
+
+.left-door, .right-door {
+    position: absolute;
+    width: 50%;
+    height: 100%;
+    background-color: darkgray;
+}
+
+.left-door {
+    left: 0;
+    transition: width 2.5s;
+}
+
+.right-door {
+    right: 0;
+    transition: width 2.5s;
+}
+
+.lift-div.open .left-door {
+    width: 0;
+}
+
+.lift-div.open .right-door {
+    width: 0;
+}
+
+.btn-div {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.up-down {
+    width: 63px;
+    height: 30px;
+}
