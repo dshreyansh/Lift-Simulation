@@ -1,14 +1,15 @@
-let targetFloors = [];
+let liftQueue = [];
 
 function onSimulate(event) {
     event.preventDefault();
 
     // Clear previous simulation
     simulator.innerHTML = '';
+    liftQueue = [];
 
     //Validations
-    if(floors.value <=0 || lifts.value <=0){
-        alert('Please enter positive number.')
+    if(floors.value <= 0 || lifts.value <= 0){
+        alert('Please enter positive numbers.')
     }
     else{
         // Create floors
@@ -86,75 +87,75 @@ function createLifts() {
 }
 
 function callLift(floor, button) {
-    const lifts = document.querySelectorAll('.lift-div');
-    let closestLift = null;
-    let minDistance = Infinity;
+    button.disabled = true;
+    button.style.background = '#23b123';
 
-    // Find the closest free lift
-    lifts.forEach(lift => {
-        if (lift.getAttribute('data-busy') === 'false') {
-            const currentFloor = parseInt(lift.getAttribute('data-current-floor'));
-            const distance = Math.abs(currentFloor - floor);
+    liftQueue.push({floor, button});
+    processLiftQueue();
+}
 
-            if (distance < minDistance) {
-                minDistance = distance;
-                closestLift = lift;
-            }
-        }
-    });
+function processLiftQueue() {
+    if (liftQueue.length === 0) return;
 
-    // If a lift is found, move it to the requested floor
-    if (closestLift) {
-        moveLift(closestLift, floor, button);
-    } else {
-        // If no lifts are available, add the floor to the target queue
-        targetFloors.push(floor);
+    const lifts = Array.from(document.querySelectorAll('.lift-div'));
+    const freeLift = lifts.find(lift => lift.getAttribute('data-busy') === 'false');
+
+    if (freeLift) {
+        const request = liftQueue.shift();
+        moveLift(freeLift, request.floor, request.button);
     }
+}
+
+function findNearestLift(targetFloor) {
+    const lifts = Array.from(document.querySelectorAll('.lift-div'));
+    return lifts.reduce((nearest, lift) => {
+        if (lift.getAttribute('data-busy') === 'true') return nearest;
+
+        const liftFloor = parseInt(lift.getAttribute('data-current-floor'));
+        const distance = Math.abs(liftFloor - targetFloor);
+
+        if (!nearest || distance < nearest.distance) {
+            return { lift, distance };
+        }
+        return nearest;
+    }, null);
 }
 
 function moveLift(lift, targetFloor, button) {
     const currentFloor = parseInt(lift.getAttribute('data-current-floor'));
     const distance = Math.abs(currentFloor - targetFloor);
-    const travelTime = distance * 2; // 2 seconds per floor
-    
-    if(button){
-        button.disabled = true;
-        button.style.background = '#23b123';
-    }
+    const travelTime = distance * 2;
     
     lift.setAttribute('data-busy', 'true');
     lift.style.transition = `transform ${travelTime}s linear`;
 
-    lift.style.transform = `translateY(-${targetFloor * 130}px)`;
+    const newPosition = -targetFloor * 130;
+    lift.style.transform = `translateY(${newPosition}px)`;
     lift.setAttribute('data-current-floor', targetFloor);
 
-    // Open and close doors
     setTimeout(() => {
-        lift.classList.add('open');
+        openLiftDoors(lift);
         
         setTimeout(() => {
-            lift.classList.remove('open');
-            lift.setAttribute('data-busy', 'false');
+            closeLiftDoors(lift);
             
-            if(button){
-                button.style.background = 'revert'
+            setTimeout(() => {
+                lift.setAttribute('data-busy', 'false');
                 button.disabled = false;
-            }
-            
-            // Check if there are more floors in the queue
-            if (targetFloors.length > 0) {
-                const nextFloor = targetFloors.shift();
-                moveLift(lift, nextFloor);
-            }
-        }, 2500); // 2.5 seconds to close doors
-    }, travelTime*1000); // 2.5 seconds to open doors
-       
+                button.style.background = 'revert';
+                
+                processLiftQueue();
+            }, 2500);
+        }, 2500);
+    }, travelTime * 1000); 
 }
-
 
 function openLiftDoors(lift) {
     const leftDoor = lift.querySelector(".left-door");
     const rightDoor = lift.querySelector(".right-door");
+
+    leftDoor.style.transition = "transform 2.5s";
+    rightDoor.style.transition = "transform 2.5s";
 
     leftDoor.style.transform = "translateX(-50%)";
     rightDoor.style.transform = "translateX(50%)";
@@ -164,7 +165,9 @@ function closeLiftDoors(lift) {
     const leftDoor = lift.querySelector(".left-door");
     const rightDoor = lift.querySelector(".right-door");
 
+    leftDoor.style.transition = "transform 2.5s";
+    rightDoor.style.transition = "transform 2.5s";
+
     leftDoor.style.transform = "translateX(0)";
     rightDoor.style.transform = "translateX(0)";
 }
-
