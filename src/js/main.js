@@ -9,7 +9,7 @@ function onSimulate(event) {
 
     //Validations
     if(floors.value <= 0 || lifts.value <= 0){
-        alert('Please enter positive numbers.')
+        alert('Please enter positive number.')
     }
     else{
         // Create floors
