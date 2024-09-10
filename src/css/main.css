@@ -14,6 +14,7 @@
     height: 100px;
     background-color: gray;
     /* transition: transform 8s linear; */
+    overflow: hidden;
 }
 
 .left-door, .right-door {

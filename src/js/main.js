@@ -1,4 +1,5 @@
 let liftQueue = [];
+let topFloor;
 
 function onSimulate(event) {
     event.preventDefault();
@@ -12,9 +13,10 @@ function onSimulate(event) {
         alert('Please enter positive number.')
     }
     else{
+        topFloor = floors.value - 1;
         // Create floors
-        for (let i = floors.value - 1; i >= 0; i--) {
-            createFloors(i, floors.value-1);
+        for (let i = topFloor; i >= 0; i--) {
+            createFloors(i, topFloor);
         }
         
         // Create lifts on the ground floor (floor 0)
@@ -90,35 +92,60 @@ function callLift(floor, button) {
     button.disabled = true;
     button.style.background = '#23b123';
 
-    liftQueue.push({floor, button});
+    liftQueue.push({floor, button, direction: button.innerHTML});
     processLiftQueue();
 }
 
 function processLiftQueue() {
     if (liftQueue.length === 0) return;
 
-    const lifts = Array.from(document.querySelectorAll('.lift-div'));
-    const freeLift = lifts.find(lift => lift.getAttribute('data-busy') === 'false');
+    const request = liftQueue[0];
+    const nearestLift = findNearestAvailableLift(request.floor, request.direction);
 
-    if (freeLift) {
-        const request = liftQueue.shift();
-        moveLift(freeLift, request.floor, request.button);
+    if (nearestLift) {
+        liftQueue.shift();
+        moveLift(nearestLift, request.floor, request.button);
     }
 }
 
-function findNearestLift(targetFloor) {
+function findNearestAvailableLift(targetFloor, direction) {
     const lifts = Array.from(document.querySelectorAll('.lift-div'));
-    return lifts.reduce((nearest, lift) => {
-        if (lift.getAttribute('data-busy') === 'true') return nearest;
+    let nearestLift = null;
+    let shortestDistance = Infinity;
+
+    for (const lift of lifts) {
+        if (lift.getAttribute('data-busy') === 'true') continue;
 
         const liftFloor = parseInt(lift.getAttribute('data-current-floor'));
         const distance = Math.abs(liftFloor - targetFloor);
 
-        if (!nearest || distance < nearest.distance) {
-            return { lift, distance };
+        // Check if the lift violates the constraints
+        if (violatesConstraints(liftFloor, targetFloor)) continue;
+
+        if (distance < shortestDistance) {
+            shortestDistance = distance;
+            nearestLift = lift;
         }
-        return nearest;
-    }, null);
+    }
+
+    return nearestLift;
+}
+
+function violatesConstraints(currentFloor, targetFloor) {
+    const lifts = Array.from(document.querySelectorAll('.lift-div'));
+    const liftsAtTarget = lifts.filter(l => parseInt(l.getAttribute('data-current-floor')) === targetFloor);
+
+    // Check top floor constraint
+    if (targetFloor === topFloor && liftsAtTarget.length >= 1) return true;
+
+    // Check middle floor constraint
+    if (targetFloor !== 0 && targetFloor !== topFloor) {
+        const upLifts = liftsAtTarget.filter(l => l.getAttribute('data-direction') === 'UP');
+        const downLifts = liftsAtTarget.filter(l => l.getAttribute('data-direction') === 'DOWN');
+        if (upLifts.length >= 1 && downLifts.length >= 1) return true;
+    }
+
+    return false;
 }
 
 function moveLift(lift, targetFloor, button) {
@@ -127,6 +154,7 @@ function moveLift(lift, targetFloor, button) {
     const travelTime = distance * 2;
     
     lift.setAttribute('data-busy', 'true');
+    lift.setAttribute('data-direction', button.innerHTML);
     lift.style.transition = `transform ${travelTime}s linear`;
 
     const newPosition = -targetFloor * 130;
@@ -141,6 +169,7 @@ function moveLift(lift, targetFloor, button) {
             
             setTimeout(() => {
                 lift.setAttribute('data-busy', 'false');
+                lift.removeAttribute('data-direction');
                 button.disabled = false;
                 button.style.background = 'revert';
                 
@@ -157,8 +186,8 @@ function openLiftDoors(lift) {
     leftDoor.style.transition = "transform 2.5s";
     rightDoor.style.transition = "transform 2.5s";
 
-    leftDoor.style.transform = "translateX(-50%)";
-    rightDoor.style.transform = "translateX(50%)";
+    leftDoor.style.transform = "translateX(-100%)";
+    rightDoor.style.transform = "translateX(100%)";
 }
 
 function closeLiftDoors(lift) {
